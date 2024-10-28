@@ -36,3 +36,28 @@
     transform: rotate(360deg);
   }
 }
+
+/* styles.css */
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.image-grid img {
+  height: 150px;
+  margin: 10px;
+  object-fit: cover; /* Ensures uniform height while maintaining aspect ratio */
+  border: 2px solid #ddd; /* Optional: Adds a border to images */
+  border-radius: 4px; /* Optional: Rounds the corners */
+  transition: transform 0.2s; /* Optional: Adds a hover effect */
+}
+
+.image-grid img:hover {
+  transform: scale(1.05); /* Optional: Slightly enlarges the image on hover */
+}
+
+.button {
+  border-radius: 5px; /* Optional: Add rounded corners */
+  cursor: pointer; /* Optional: Change cursor on hover */
+}
