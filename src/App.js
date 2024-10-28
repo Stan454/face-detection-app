@@ -6,8 +6,10 @@ const App = () => {
     const [uploadedImages, setUploadedImages] = useState([]);
     const [originalImages, setOriginalImages] = useState([]); // State to hold original images
     const [fileNames, setFileNames] = useState([]);
+    const [originalExtensions, setOriginalExtensions] = useState([]); // State to hold original extensions
     const [facesDetected, setFacesDetected] = useState([]); // State to track face detection
     const fileInputRef = useRef(null); // Reference to the file input
+    const [loading, setLoading] = useState(false); // Loading state
 
     const handleFileChange = async (event) => {
         const files = Array.from(event.target.files);
@@ -20,6 +22,7 @@ const App = () => {
             formData.append('file', file);
         });
 
+        setLoading(true); // Start loading
         try {
             const response = await fetch('http://localhost:5000/upload', {
                 method: 'POST',
@@ -35,11 +38,14 @@ const App = () => {
                 const images = data.images.map(img => `data:image/jpeg;base64,${img}`);
                 setUploadedImages(images);
                 setOriginalImages(data.original_images); // Store original images
+                setOriginalExtensions(data.original_extensions); // Store original extensions
                 setFacesDetected(data.faces_detected); // Update the facesDetected state
             }
         } catch (error) {
             console.error('Error uploading files:', error);
             alert('An error occurred while uploading the images.');
+        } finally {
+            setLoading(false); // End loading
         }
     };
 
@@ -48,24 +54,43 @@ const App = () => {
         setUploadedImages([]);   // Clear uploaded images
         setOriginalImages([]);   // Clear original images
         setFileNames([]);        // Clear file names
+        setOriginalExtensions([]); // Clear original extensions
         setFacesDetected([]);    // Clear face detection results
         setSelectedFiles([]);    // Clear selected files
         fileInputRef.current.value = ''; // Reset input field
     };
 
     // Download images that have faces detected
-    const handleDownloadImages = () => {
-        facesDetected.forEach((detected, index) => {
+    const handleDownloadImages = async () => {
+        for (let index = 0; index < facesDetected.length; index++) {
+            const detected = facesDetected[index];
             if (detected) {
+                const fileName = fileNames[index];
+                const extension = originalExtensions[index]; // Get the original extension
+    
+                let mimeType = '';
+                if (extension === 'jpg' || extension === 'jpeg') {
+                    mimeType = 'image/jpeg';
+                } else if (extension === 'png') {
+                    mimeType = 'image/png';
+                } else {
+                    console.warn(`Unsupported file type for download: ${fileName}`);
+                    continue; // Skip unsupported file types
+                }
+    
                 const link = document.createElement('a');
-                link.href = `data:image/jpeg;base64,${originalImages[index]}`; // Use original image URL
-                link.download = fileNames[index]; // The file name for download
-                document.body.appendChild(link); // Append to body
-                link.click(); // Trigger the download
-                document.body.removeChild(link); // Clean up
+                link.href = `data:${mimeType};base64,${originalImages[index]}`;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+    
+                // Wait a small amount of time before the next download
+                await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
             }
-        });
+        }
     };
+    
 
     // Count faces detected and not detected
     const countFaces = () => {
@@ -92,6 +117,8 @@ const App = () => {
             </div>
             <div>
                 <h2>Uploaded Images</h2>
+                {/* Display loading indicator */}
+                {loading && <div>Loading...</div>}
                 {/* Display counts of detected and not detected faces */}
                 <p>{detectedCount} images with faces detected</p>
                 <p>{notDetectedCount} images without faces detected</p>
